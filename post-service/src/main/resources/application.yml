@@ -1,0 +1,38 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: post-service
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:${REDIS_HOST:localhost}}
+      port: ${SPRING_DATA_REDIS_PORT:${REDIS_PORT:6379}}
+      timeout: ${REDIS_TIMEOUT:1000ms}
+      connect-timeout: ${REDIS_CONNECT_TIMEOUT:1000ms}
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/post_db}
+    username: ${SPRING_DATASOURCE_USERNAME:threadly}
+    password: ${SPRING_DATASOURCE_PASSWORD:threadly_dev_password}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+
+jwt:
+  secret: ${JWT_SECRET:threadly_dev_secret_key_at_least_32_bytes_long_123456}
+
+services:
+  community:
+    url: ${COMMUNITY_SERVICE_URL:http://localhost:8082}
+    connect-timeout-ms: ${COMMUNITY_CONNECT_TIMEOUT_MS:3000}
+    read-timeout-ms: ${COMMUNITY_READ_TIMEOUT_MS:5000}
+
+cache:
+  feed:
+    ttl-seconds: ${FEED_CACHE_TTL_SECONDS:60}

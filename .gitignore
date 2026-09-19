@@ -1,0 +1,50 @@
+# Tests - keep locally, don't push
+**/src/test/
+**/src/testFixtures/
+**/src/integrationTest/
+**/src/it/
+
+# AI / coding assistant metadata
+.agents/
+**/.agents/
+AGENTS.md
+**/AGENTS.md
+
+.github/copilot-instructions.md
+.github/instructions/
+.github/prompts/
+
+.windsurf/
+**/.windsurf/
+.codeium/
+**/.codeium/
+.continue/
+**/.continue/
+.gemini/
+**/.gemini/
+GEMINI.md
+**/GEMINI.md
+.aider*
+**/.aider*
+
+# Maven
+**/target/
+
+# IntelliJ
+.idea/
+**/.idea/
+*.iml
+
+# VS Code
+.vscode/
+**/.vscode/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+**/logs/

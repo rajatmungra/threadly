@@ -1,0 +1,25 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: identity-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:${POSTGRES_HOST:localhost}}:${DB_PORT:${POSTGRES_PORT:5432}}/${DB_NAME:identity_db}}
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:${POSTGRES_USER:threadly}}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:${POSTGRES_PASSWORD:threadly_dev_password}}}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+
+jwt:
+  # Safe default for local development; MUST be overridden in production environments
+  secret: ${JWT_SECRET:threadly_dev_secret_key_at_least_32_bytes_long_123456}
+  expiration-seconds: ${JWT_EXPIRATION_SECONDS:900}
+  refresh-expiration-seconds: ${JWT_REFRESH_EXPIRATION_SECONDS:604800}
