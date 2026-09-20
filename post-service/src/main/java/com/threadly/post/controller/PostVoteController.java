@@ -3,6 +3,10 @@ package com.threadly.post.controller;
 import com.threadly.post.dto.request.VoteRequest;
 import com.threadly.post.dto.response.VoteResponse;
 import com.threadly.post.service.PostVoteService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -18,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
+@Tag(name = "Post Votes", description = "Voting operations on posts")
 @RestController
 @RequestMapping("/api/v1/posts/{postId}/votes")
 public class PostVoteController {
@@ -28,6 +33,13 @@ public class PostVoteController {
         this.postVoteService = postVoteService;
     }
 
+    @Operation(summary = "Cast or update vote on a post")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Vote recorded successfully"),
+        @ApiResponse(responseCode = "400", description = "Validation failed"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Post not found")
+    })
     @PutMapping
     public VoteResponse setVote(
         @AuthenticationPrincipal Jwt jwt,
@@ -38,6 +50,12 @@ public class PostVoteController {
         return postVoteService.setVote(postId, userId, request.value());
     }
 
+    @Operation(summary = "Remove vote from a post")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Vote removed successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Post not found")
+    })
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void removeVote(

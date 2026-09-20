@@ -4,6 +4,10 @@ import com.threadly.comment.dto.request.CreateCommentRequest;
 import com.threadly.comment.dto.response.CommentResponse;
 import com.threadly.comment.dto.response.PagedResponse;
 import com.threadly.comment.service.CommentService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
+@Tag(name = "Comments", description = "Post comments management")
 @RestController
 @RequestMapping("/api/v1/posts/{postId}/comments")
 public class CommentController {
@@ -30,6 +35,13 @@ public class CommentController {
         this.commentService = commentService;
     }
 
+    @Operation(summary = "Create a comment or reply on a post")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Comment created successfully"),
+        @ApiResponse(responseCode = "400", description = "Validation failed"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Post or parent comment not found")
+    })
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CommentResponse createComment(
@@ -42,6 +54,11 @@ public class CommentController {
         return commentService.createComment(postId, request, authorId, token);
     }
 
+    @Operation(summary = "List root comments for a post")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Root comments retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     @GetMapping
     public PagedResponse<CommentResponse> getRootComments(
         @PathVariable UUID postId,

@@ -4,6 +4,10 @@ import com.threadly.community.dto.request.CreateCommunityRequest;
 import com.threadly.community.dto.response.CommunityResponse;
 import com.threadly.community.dto.response.PagedResponse;
 import com.threadly.community.service.CommunityService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
+@Tag(name = "Communities", description = "Community management and memberships")
 @RestController
 @RequestMapping("/api/v1/communities")
 public class CommunityController {
@@ -31,6 +36,13 @@ public class CommunityController {
         this.communityService = communityService;
     }
 
+    @Operation(summary = "Create a new community")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Community created successfully"),
+        @ApiResponse(responseCode = "400", description = "Validation failed"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "409", description = "Community name already exists")
+    })
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CommunityResponse createCommunity(
@@ -41,11 +53,22 @@ public class CommunityController {
         return communityService.createCommunity(request, userId);
     }
 
+    @Operation(summary = "Get community by ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Community retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Community not found")
+    })
     @GetMapping("/{communityId}")
     public CommunityResponse getCommunity(@PathVariable UUID communityId) {
         return communityService.getCommunity(communityId);
     }
 
+    @Operation(summary = "List communities with pagination")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Communities retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     @GetMapping
     public PagedResponse<CommunityResponse> getCommunities(
         @RequestParam(defaultValue = "0") int page,
@@ -54,6 +77,13 @@ public class CommunityController {
         return communityService.getCommunities(page, size);
     }
 
+    @Operation(summary = "Join a community")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Joined community successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Community not found"),
+        @ApiResponse(responseCode = "409", description = "Already a member of the community")
+    })
     @PostMapping("/{communityId}/join")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void joinCommunity(
@@ -64,6 +94,12 @@ public class CommunityController {
         communityService.joinCommunity(communityId, userId);
     }
 
+    @Operation(summary = "Leave a community")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Left community successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Community not found or not a member")
+    })
     @DeleteMapping("/{communityId}/join")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void leaveCommunity(

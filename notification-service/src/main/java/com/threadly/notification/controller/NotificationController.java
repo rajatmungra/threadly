@@ -3,6 +3,10 @@ package com.threadly.notification.controller;
 import com.threadly.notification.dto.response.NotificationResponse;
 import com.threadly.notification.dto.response.PagedResponse;
 import com.threadly.notification.service.NotificationService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -17,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
+@Tag(name = "Notifications", description = "User notifications management")
 @RestController
 @RequestMapping("/api/v1/notifications")
 public class NotificationController {
@@ -27,6 +32,11 @@ public class NotificationController {
         this.notificationService = notificationService;
     }
 
+    @Operation(summary = "List notifications for the current user")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Notifications retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     @GetMapping
     public PagedResponse<NotificationResponse> getNotifications(
         @AuthenticationPrincipal Jwt jwt,
@@ -37,6 +47,12 @@ public class NotificationController {
         return notificationService.getNotifications(userId, page, size);
     }
 
+    @Operation(summary = "Mark a notification as read")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Notification marked as read successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Notification not found")
+    })
     @PatchMapping("/{notificationId}/read")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void markAsRead(

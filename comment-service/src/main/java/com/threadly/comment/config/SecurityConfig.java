@@ -41,6 +41,12 @@ public class SecurityConfig {
             .httpBasic(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                .requestMatchers(
+                    "/v3/api-docs",
+                    "/v3/api-docs/**",
+                    "/swagger-ui.html",
+                    "/swagger-ui/**"
+                ).permitAll()
                 .requestMatchers("/api/v1/posts/**").authenticated()
                 .requestMatchers("/api/v1/comments/**").authenticated()
                 .anyRequest().authenticated()

@@ -3,6 +3,10 @@ package com.threadly.comment.controller;
 import com.threadly.comment.dto.request.VoteRequest;
 import com.threadly.comment.dto.response.VoteResponse;
 import com.threadly.comment.service.CommentVoteService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -18,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
+@Tag(name = "Comment Votes", description = "Voting operations on comments")
 @RestController
 @RequestMapping("/api/v1/comments/{commentId}/votes")
 public class CommentVoteController {
@@ -28,6 +33,13 @@ public class CommentVoteController {
         this.commentVoteService = commentVoteService;
     }
 
+    @Operation(summary = "Cast or update vote on a comment")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Vote recorded successfully"),
+        @ApiResponse(responseCode = "400", description = "Validation failed"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Comment not found")
+    })
     @PutMapping
     public VoteResponse setVote(
         @AuthenticationPrincipal Jwt jwt,
@@ -38,6 +50,12 @@ public class CommentVoteController {
         return commentVoteService.setVote(commentId, userId, request.value());
     }
 
+    @Operation(summary = "Remove vote from a comment")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Vote removed successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Comment not found")
+    })
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void removeVote(
