@@ -1,5 +1,47 @@
 server:
   port: 8080
+
 spring:
   application:
     name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: identity-auth
+              uri: ${IDENTITY_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/v1/auth/**
+
+            - id: identity-users
+              uri: ${IDENTITY_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/v1/users/**
+
+            - id: community
+              uri: ${COMMUNITY_SERVICE_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/v1/communities/**
+
+            - id: comment-post-comments
+              uri: ${COMMENT_SERVICE_URL:http://localhost:8084}
+              predicates:
+                - Path=/api/v1/posts/*/comments
+              order: 1
+
+            - id: comments
+              uri: ${COMMENT_SERVICE_URL:http://localhost:8084}
+              predicates:
+                - Path=/api/v1/comments/**
+
+            - id: posts
+              uri: ${POST_SERVICE_URL:http://localhost:8083}
+              predicates:
+                - Path=/api/v1/posts/**
+              order: 2
+
+            - id: notifications
+              uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8085}
+              predicates:
+                - Path=/api/v1/notifications/**
