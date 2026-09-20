@@ -17,6 +17,11 @@ spring:
         format_sql: true
   flyway:
     enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
 jwt:
   secret: ${JWT_SECRET:threadly_dev_secret_key_at_least_32_bytes_long_123456}
@@ -26,3 +31,12 @@ services:
     url: ${POST_SERVICE_URL:http://localhost:8083}
     connect-timeout-ms: ${POST_CONNECT_TIMEOUT_MS:3000}
     read-timeout-ms: ${POST_READ_TIMEOUT_MS:5000}
+
+kafka:
+  topics:
+    comment-created: ${KAFKA_TOPIC_COMMENT_CREATED:threadly.comment.created.v1}
+
+outbox:
+  poll-delay-ms: ${OUTBOX_POLL_DELAY_MS:1000}
+  batch-size: ${OUTBOX_BATCH_SIZE:50}
+  kafka-timeout-ms: ${OUTBOX_KAFKA_TIMEOUT_MS:5000}

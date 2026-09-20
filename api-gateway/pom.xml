@@ -22,7 +22,7 @@
     </dependencies>
 
     <build>
-        <plugins>
+        <plugins>tch (DataIntegrityViolationException ex) {
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

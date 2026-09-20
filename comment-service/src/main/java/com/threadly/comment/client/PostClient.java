@@ -19,13 +19,18 @@ public class PostClient {
         this.restClient = restClient;
     }
 
-    public void verifyPostExists(UUID postId, String bearerToken) {
+    public PostDto verifyPostExists(UUID postId, String bearerToken) {
         try {
-            restClient.get()
+            PostDto post = restClient.get()
                 .uri("/api/v1/posts/{postId}", postId)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken)
                 .retrieve()
-                .toBodilessEntity();
+                .body(PostDto.class);
+
+            if (post == null) {
+                throw new PostNotFoundException("Post not found with id: " + postId);
+            }
+            return post;
         } catch (HttpClientErrorException ex) {
             if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
                 throw new PostNotFoundException("Post not found with id: " + postId);

@@ -1,14 +1,19 @@
 package com.threadly.comment.service;
 
 import com.threadly.comment.client.PostClient;
+import com.threadly.comment.client.PostDto;
 import com.threadly.comment.dto.request.CreateCommentRequest;
 import com.threadly.comment.dto.response.CommentResponse;
 import com.threadly.comment.dto.response.PagedResponse;
 import com.threadly.comment.entity.Comment;
+import com.threadly.comment.entity.OutboxEvent;
+import com.threadly.comment.event.CommentCreatedEvent;
 import com.threadly.comment.exception.CommentNotFoundException;
 import com.threadly.comment.exception.InvalidPaginationException;
 import com.threadly.comment.exception.InvalidParentCommentException;
 import com.threadly.comment.repository.CommentRepository;
+import com.threadly.comment.repository.OutboxEventRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -16,6 +21,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -27,19 +35,46 @@ import java.util.UUID;
 public class CommentService {
 
     private final CommentRepository commentRepository;
+    private final OutboxEventRepository outboxEventRepository;
     private final PostClient postClient;
     private final TransactionTemplate transactionTemplate;
+    private final ObjectMapper objectMapper;
+    private final String commentCreatedTopic;
 
-    public CommentService(CommentRepository commentRepository, PostClient postClient, TransactionTemplate transactionTemplate) {
+    @org.springframework.beans.factory.annotation.Autowired
+    public CommentService(
+        CommentRepository commentRepository,
+        OutboxEventRepository outboxEventRepository,
+        PostClient postClient,
+        TransactionTemplate transactionTemplate,
+        @Value("${kafka.topics.comment-created:threadly.comment.created.v1}") String commentCreatedTopic
+    ) {
+        this(commentRepository, outboxEventRepository, postClient, transactionTemplate, JsonMapper.builder().build(), commentCreatedTopic);
+    }
+
+    public CommentService(
+        CommentRepository commentRepository,
+        OutboxEventRepository outboxEventRepository,
+        PostClient postClient,
+        TransactionTemplate transactionTemplate,
+        ObjectMapper objectMapper,
+        @Value("${kafka.topics.comment-created:threadly.comment.created.v1}") String commentCreatedTopic
+    ) {
         this.commentRepository = commentRepository;
+        this.outboxEventRepository = outboxEventRepository;
         this.postClient = postClient;
         this.transactionTemplate = transactionTemplate;
+        this.objectMapper = objectMapper != null ? objectMapper : JsonMapper.builder().build();
+        this.commentCreatedTopic = commentCreatedTopic;
     }
 
     public CommentResponse createComment(UUID postId, CreateCommentRequest request, UUID authorId, String token) {
-        postClient.verifyPostExists(postId, token);
+        PostDto post = postClient.verifyPostExists(postId, token);
 
         return transactionTemplate.execute(status -> {
+            UUID recipientUserId;
+            String eventType;
+
             if (request.parentCommentId() != null) {
                 Comment parent = commentRepository.findById(request.parentCommentId())
                     .orElseThrow(() -> new CommentNotFoundException("Comment not found with id: " + request.parentCommentId()));
@@ -47,6 +82,11 @@ public class CommentService {
                 if (!parent.getPostId().equals(postId)) {
                     throw new InvalidParentCommentException("Parent comment does not belong to post: " + postId);
                 }
+                recipientUserId = parent.getAuthorId();
+                eventType = CommentCreatedEvent.TYPE_COMMENT_REPLY;
+            } else {
+                recipientUserId = post.authorId();
+                eventType = CommentCreatedEvent.TYPE_POST_COMMENT;
             }
 
             Comment comment = new Comment();
@@ -60,6 +100,39 @@ public class CommentService {
             comment.setUpdatedAt(now);
 
             Comment savedComment = commentRepository.save(comment);
+
+            if (!authorId.equals(recipientUserId)) {
+                UUID eventId = UUID.randomUUID();
+                CommentCreatedEvent event = new CommentCreatedEvent(
+                    eventId,
+                    savedComment.getId(),
+                    postId,
+                    savedComment.getParentCommentId(),
+                    authorId,
+                    recipientUserId,
+                    eventType,
+                    savedComment.getCreatedAt()
+                );
+
+                String payload;
+                try {
+                    payload = objectMapper.writeValueAsString(event);
+                } catch (JacksonException ex) {
+                    throw new IllegalStateException("Failed to serialize comment created event", ex);
+                }
+
+                OutboxEvent outboxEvent = new OutboxEvent(
+                    eventId,
+                    commentCreatedTopic,
+                    recipientUserId.toString(),
+                    eventType,
+                    payload,
+                    savedComment.getCreatedAt(),
+                    null
+                );
+                outboxEventRepository.save(outboxEvent);
+            }
+
             return CommentResponse.fromEntity(savedComment);
         });
     }
