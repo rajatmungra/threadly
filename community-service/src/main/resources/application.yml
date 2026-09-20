@@ -20,3 +20,12 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET:threadly_dev_secret_key_at_least_32_bytes_long_123456}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never

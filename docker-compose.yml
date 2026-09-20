@@ -41,22 +41,203 @@ services:
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://:9092,INTERNAL://:29092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:${KAFKA_PORT:-9092},INTERNAL://kafka:29092
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_NUM_PARTITIONS: 1
+      CLUSTER_ID: "4L622nShTUiBenA3heKdGw"
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    volumes:
+      - kafka_data:/var/lib/kafka/data
     healthcheck:
       test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list"]
-      interval: 5s
-      timeout: 5s
+      interval: 10s
+      timeout: 10s
       retries: 5
+      start_period: 30s
+
+  identity-service:
+    build:
+      context: .
+      args:
+        MODULE: identity-service
+    image: threadly-identity-service:0.0.1
+    container_name: threadly-identity-service
+    restart: unless-stopped
+    expose:
+      - "8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/identity_db
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-threadly}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-threadly_dev_password}
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  community-service:
+    build:
+      context: .
+      args:
+        MODULE: community-service
+    image: threadly-community-service:0.0.1
+    container_name: threadly-community-service
+    restart: unless-stopped
+    expose:
+      - "8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/community_db
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-threadly}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-threadly_dev_password}
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  post-service:
+    build:
+      context: .
+      args:
+        MODULE: post-service
+    image: threadly-post-service:0.0.1
+    container_name: threadly-post-service
+    restart: unless-stopped
+    expose:
+      - "8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/post_db
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-threadly}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-threadly_dev_password}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      COMMUNITY_SERVICE_URL: http://community-service:8082
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  comment-service:
+    build:
+      context: .
+      args:
+        MODULE: comment-service
+    image: threadly-comment-service:0.0.1
+    container_name: threadly-comment-service
+    restart: unless-stopped
+    expose:
+      - "8084"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/comment_db
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-threadly}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-threadly_dev_password}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      POST_SERVICE_URL: http://post-service:8083
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  notification-service:
+    build:
+      context: .
+      args:
+        MODULE: notification-service
+    image: threadly-notification-service:0.0.1
+    container_name: threadly-notification-service
+    restart: unless-stopped
+    expose:
+      - "8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/notification_db
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-threadly}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-threadly_dev_password}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  api-gateway:
+    build:
+      context: .
+      args:
+        MODULE: api-gateway
+    image: threadly-api-gateway:0.0.1
+    container_name: threadly-api-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      IDENTITY_SERVICE_URL: http://identity-service:8081
+      COMMUNITY_SERVICE_URL: http://community-service:8082
+      POST_SERVICE_URL: http://post-service:8083
+      COMMENT_SERVICE_URL: http://comment-service:8084
+      NOTIFICATION_SERVICE_URL: http://notification-service:8085
+    depends_on:
+      identity-service:
+        condition: service_healthy
+      community-service:
+        condition: service_healthy
+      post-service:
+        condition: service_healthy
+      comment-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
 
 volumes:
   postgres_data:
   redis_data:
+  kafka_data:
