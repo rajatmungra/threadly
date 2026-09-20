@@ -63,10 +63,13 @@ public class UserService {
                 msg += " " + rootCause.getMessage().toLowerCase(Locale.ROOT);
             }
 
-            if (msg.contains("email") || msg.contains("uk_users_email")) {
+            if (msg.contains("uk_users_username")) {
+                throw new DuplicateUsernameException("Username already exists");
+            }
+            if (msg.contains("uk_users_email")) {
                 throw new DuplicateEmailException("Email already exists");
             }
-            throw new DuplicateUsernameException("Username already exists");
+            throw ex;
         }
     }
 

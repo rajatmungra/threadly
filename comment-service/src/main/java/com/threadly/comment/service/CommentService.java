@@ -101,37 +101,35 @@ public class CommentService {
 
             Comment savedComment = commentRepository.save(comment);
 
-            if (!authorId.equals(recipientUserId)) {
-                UUID eventId = UUID.randomUUID();
-                CommentCreatedEvent event = new CommentCreatedEvent(
-                    eventId,
-                    savedComment.getId(),
-                    postId,
-                    savedComment.getParentCommentId(),
-                    authorId,
-                    recipientUserId,
-                    eventType,
-                    savedComment.getCreatedAt()
-                );
+            UUID eventId = UUID.randomUUID();
+            CommentCreatedEvent event = new CommentCreatedEvent(
+                eventId,
+                savedComment.getId(),
+                postId,
+                savedComment.getParentCommentId(),
+                authorId,
+                recipientUserId,
+                eventType,
+                savedComment.getCreatedAt()
+            );
 
-                String payload;
-                try {
-                    payload = objectMapper.writeValueAsString(event);
-                } catch (JacksonException ex) {
-                    throw new IllegalStateException("Failed to serialize comment created event", ex);
-                }
-
-                OutboxEvent outboxEvent = new OutboxEvent(
-                    eventId,
-                    commentCreatedTopic,
-                    recipientUserId.toString(),
-                    eventType,
-                    payload,
-                    savedComment.getCreatedAt(),
-                    null
-                );
-                outboxEventRepository.save(outboxEvent);
+            String payload;
+            try {
+                payload = objectMapper.writeValueAsString(event);
+            } catch (JacksonException ex) {
+                throw new IllegalStateException("Failed to serialize comment created event", ex);
             }
+
+            OutboxEvent outboxEvent = new OutboxEvent(
+                eventId,
+                commentCreatedTopic,
+                recipientUserId.toString(),
+                eventType,
+                payload,
+                savedComment.getCreatedAt(),
+                null
+            );
+            outboxEventRepository.save(outboxEvent);
 
             return CommentResponse.fromEntity(savedComment);
         });

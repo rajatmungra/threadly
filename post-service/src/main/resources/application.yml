@@ -23,6 +23,17 @@ spring:
         format_sql: true
   flyway:
     enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: post-service-comment-count
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+kafka:
+  topics:
+    comment-created: ${KAFKA_TOPIC_COMMENT_CREATED:threadly.comment.created.v1}
 
 jwt:
   secret: ${JWT_SECRET:threadly_dev_secret_key_at_least_32_bytes_long_123456}

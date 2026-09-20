@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -36,7 +37,7 @@ public class CommentCreatedConsumer {
         CommentCreatedEvent event;
         try {
             event = objectMapper.readValue(message, CommentCreatedEvent.class);
-        } catch (Exception ex) {
+        } catch (JacksonException ex) {
             log.error("Failed to deserialize comment created event payload: {}", message, ex);
             return;
         }

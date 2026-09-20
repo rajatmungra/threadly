@@ -98,6 +98,12 @@ public class NotificationService {
      * allowing the subsequent existence check to run in a clean transaction.
      */
     public void processCommentCreated(CommentCreatedEvent event) {
+        if (event.actorUserId() != null && event.actorUserId().equals(event.recipientUserId())) {
+            log.info("Self-notification suppressed: actorUserId={}, recipientUserId={}, eventId={}",
+                event.actorUserId(), event.recipientUserId(), event.eventId());
+            return;
+        }
+
         if (notificationRepository.existsBySourceEventId(event.eventId())) {
             log.info("Duplicate event ignored before insert: sourceEventId={}", event.eventId());
             return;

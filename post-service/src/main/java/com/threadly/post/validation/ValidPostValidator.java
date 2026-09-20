@@ -6,6 +6,7 @@ import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 
 public class ValidPostValidator implements ConstraintValidator<ValidPost, CreatePostRequest> {
 
@@ -77,7 +78,7 @@ public class ValidPostValidator implements ConstraintValidator<ValidPost, Create
                 return false;
             }
             return uri.getHost() != null && !uri.getHost().trim().isEmpty();
-        } catch (Exception e) {
+        } catch (URISyntaxException e) {
             return false;
         }
     }
