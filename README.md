@@ -1,5 +1,7 @@
 # Threadly
 
+[![CI](https://github.com/rajatmungra/threadly/actions/workflows/ci.yml/badge.svg)](https://github.com/rajatmungra/threadly/actions/workflows/ci.yml)
+
 Threadly is a Reddit-style backend built as a Java/Spring Boot microservice system demonstrating service isolation, JWT authentication, PostgreSQL database-per-service, Redis caching, Kafka event messaging, transactional outbox delivery, idempotent consumers, concurrency-safe voting, API Gateway routing, OpenAPI documentation, and Docker Compose deployment.
 
 This project is designed as a portfolio and reference backend demonstrating production-oriented architectural patterns rather than a production-ready deployment.

@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Maven Verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      POSTGRES_USER: threadly
+      POSTGRES_PASSWORD: threadly_dev_password
+      POSTGRES_DB: threadly
+      JWT_SECRET: threadly_dev_secret_key_at_least_32_bytes_long_123456
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: '**/pom.xml'
+
+      - name: Start infrastructure
+        run: |
+          docker compose up -d --wait postgres redis kafka || {
+            echo "Infrastructure failed to reach healthy state"
+            docker compose ps
+            docker compose logs postgres redis kafka
+            exit 1
+          }
+
+      - name: Verify infrastructure status
+        run: docker compose ps
+
+      - name: Run Maven verification
+        run: mvn --batch-mode --no-transfer-progress clean verify
+
+      - name: Infrastructure diagnostics on failure
+        if: failure()
+        run: |
+          docker compose ps
+          docker compose logs postgres redis kafka
+
+      - name: Infrastructure cleanup
+        if: always()
+        run: docker compose down -v
+
+  docker-build:
+    name: Docker Build
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Configure Compose environment
+        run: cp .env.example .env
+
+      - name: Validate Compose configuration
+        run: docker compose config
+
+      - name: Build application images
+        run: docker compose build
